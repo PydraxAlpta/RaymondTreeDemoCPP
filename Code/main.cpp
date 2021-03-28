@@ -20,7 +20,9 @@
 #include <iostream>
 #include <vector>
 
-// this enum is used to implement the "temporary reversal of link direction" that the basic tree structure cannot incorporate
+// this enum is used to implement the "temporary reversal of link direction" that the basic tree structure cannot incorporate.
+// UP refers to the parent (or further) having the token. LEFT means left child has the token. RIGHT means right child has the token.
+// The algorithm expects the polarity of the link to change, but that is not how a tree works Raymond.
 enum TokenPolarity
 {
     LEFT,
@@ -28,19 +30,20 @@ enum TokenPolarity
     UP
 };
 
-struct Node
+struct Node // Contains the structural and data info of one node in the tree. Also some requesting functions.
+    // I do not believe in the idea of "structs contain only data" if I can treat them as public only classes instead.
 {
     int id;
     bool hasToken;
     int tokenPolarity;
     std::vector<int> requests;
     Node *parent, *left, *right;
-    void sendRequest()
+    void sendRequest() //Used by a node to send a request from it's own need.
     {
         using std::cout;
         requests.push_back(this->id);
         cout << this->id << " added request to own queue\n";
-        if (tokenPolarity == UP)
+        if (tokenPolarity == UP) //refer the info above the enum where UP/LEFT/RIGHT is declared//refer the info above the enum
         {
             if (parent == nullptr)
             {
@@ -77,7 +80,8 @@ struct Node
             }
         }
     }
-    void receiveRequest(int senderid)
+    void receiveRequest(int senderid) // Used by a node to receive a request from another node with the senderid, which may come from the sender
+                                      // or may be passed on from an intermediate node
     {
         using std::cout;
         for (auto &&i : requests)
@@ -89,7 +93,7 @@ struct Node
         cout << "Added request of " << senderid << " to queue of " << this->id << "\n";
         if (!this->hasToken)
         {
-            if (tokenPolarity == UP)
+            if (tokenPolarity == UP) //refer the info above the enum where UP/LEFT/RIGHT is declared//refer the info above the enum
             {
                 if (parent == nullptr)
                 {
@@ -129,7 +133,7 @@ struct Node
     }
 };
 
-class Tree
+class Tree // The main Tree that holds the structure and runs all the mutual exclusion algorithms.
 {
 private:
     Node *root;
@@ -143,9 +147,9 @@ public:
     void request(int);
     void display();
     void release();
-} T;
+} T; // Globally created, but could have been in main() too. 
 
-Tree::Tree() //creating 2-level, 5 node binary tree
+Tree::Tree() //creating 2-level, 5 node binary tree. Hard-coded, recommend using proper BST algorithm for inserting nodes over this
 {
     tokenID = 1;
     //level 0
@@ -180,11 +184,11 @@ Tree::Tree() //creating 2-level, 5 node binary tree
     lright->hasToken = false;
     lright->tokenPolarity = UP;
 }
-Tree::~Tree()
+Tree::~Tree() //I like recursion, how did you know
 {
     remove(root);
 }
-void Tree::remove(Node *N)
+void Tree::remove(Node *N) // Just a recursive tree deletion algorithm
 {
     if (N == nullptr)
     {
@@ -219,7 +223,7 @@ int main(int argc, char const *argv[])
                   << "4. Exit\n"
                   << "Enter your choice: ";
         std::cin >> ch;
-        if (ch == 1)
+        if (ch == 1) //I hate switch case break default
         {
             std::cout << "Enter node to make request with (1-5): ";
             std::cin >> ch;
@@ -245,7 +249,7 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-void Tree::request(int id)
+void Tree::request(int id) // a check to see if the node itself itself has the token, and then calling its sendRequest()
 {
     Node *N = getNodeByID(id);
     if (N->hasToken == true)
@@ -256,7 +260,7 @@ void Tree::request(int id)
     N->sendRequest();
 }
 
-void Tree::display()
+void Tree::display() //Yeah I like recursion :>   Also just displays all nodes linearly, no ASCII tree drawings to be seen here
 {
     void displayHelper(Node *);
     displayHelper(root);
@@ -282,7 +286,8 @@ void displayHelper(Node *N)
     if (N->right)
         displayHelper(N->right);
 }
-void Tree::release()
+void Tree::release() // A token is released to be used by others only when the current holder is done using it. 
+                     // I set this to happen separately so the queues can fill up with requests.
 {
     using std::cout;
     Node *N = getNodeByID(tokenID);
@@ -292,7 +297,7 @@ void Tree::release()
         return;
     }
     Node *R = getNodeByID(N->requests.front());
-    if (R == N->parent)
+    if (R == N->parent) //refer the info above the enum where UP/LEFT/RIGHT is declared//refer the info above the enum
     {
         N->tokenPolarity = UP;
     }
@@ -324,7 +329,7 @@ void Tree::release()
         release();
 }
 
-Node *Tree::getNodeByID(int id)
+Node *Tree::getNodeByID(int id) //gets the pointer to the node in the tree by id. hardcoded, do not recommend.
 {
     Node *N = nullptr;
     switch (id)
